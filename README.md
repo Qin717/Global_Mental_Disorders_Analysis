@@ -35,8 +35,6 @@ This project analyzes a comprehensive dataset of global mental health disorders,
 
 ```
 mental-disorders-analysis/
-├── 📁 data/                          # Raw dataset
-│   └── Mental_Disorders_Raw_Data.csv # Original dataset (1.8GB)
 ├── 📁 src/python/                    # Python analysis scripts
 │   └── mental_disorders_analysis.py # Main analysis engine
 ├── 📁 notebooks/                     # Jupyter notebooks
@@ -68,7 +66,14 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. **Run analysis**
+3. **Download and place dataset**
+```bash
+# Create data directory and place the CSV file
+mkdir data
+# Place Mental_Disorders_Raw_Data.csv in the data/ folder
+```
+
+4. **Run analysis**
 ```bash
 # Python analysis
 python src/python/mental_disorders_analysis.py
