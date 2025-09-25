@@ -35,16 +35,19 @@ This project analyzes a comprehensive dataset of global mental health disorders,
 
 ```
 mental-disorders-analysis/
-├── 📁 data/                          # Dataset directory (create locally)
+├── 📁 data/                          # Raw datasets
 │   └── Mental_Disorders_Raw_Data.csv # Place dataset here (1.8GB)
-├── 📁 src/python/                    # Python analysis scripts
-│   └── mental_disorders_analysis.py # Main analysis engine
-├── 📁 notebooks/                     # Jupyter notebooks
-│   └── Mental_Disorders_Portfolio.ipynb # Interactive analysis
-├── 📝 README.md                      # Project documentation
-├── 📋 requirements.txt               # Python dependencies
-├── ⚖️ LICENSE                        # MIT License
-└── 🚫 .gitignore                     # Git exclusions
+├── 📁 scripts/                       # Python analysis scripts
+│   ├── mental_disorders_analysis.py # Main analysis engine
+│   └── Mental_Disorders_Portfolio.ipynb # Interactive Jupyter analysis
+├── 📁 sql/                          # SQL queries and database scripts
+│   ├── create_schema.sql            # Database schema setup
+│   └── analysis_queries.sql         # Key analytical queries
+├── 📁 reports/                      # Generated analysis reports
+├── 📝 README.md                     # Project documentation
+├── 📋 requirements.txt              # Python dependencies
+├── ⚖️ LICENSE                       # MIT License
+└── 🚫 .gitignore                    # Git exclusions
 ```
 
 ## 🚀 Quick Start
@@ -78,10 +81,14 @@ mkdir data
 4. **Run analysis**
 ```bash
 # Python analysis
-python src/python/mental_disorders_analysis.py
+python scripts/mental_disorders_analysis.py
 
 # Open Jupyter notebooks
-jupyter notebook notebooks/
+jupyter notebook scripts/
+
+# Run SQL queries (if using PostgreSQL)
+psql your_database < sql/create_schema.sql
+psql your_database < sql/analysis_queries.sql
 ```
 
 ## 📊 Dataset Information
