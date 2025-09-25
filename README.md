@@ -35,6 +35,8 @@ This project analyzes a comprehensive dataset of global mental health disorders,
 
 ```
 mental-disorders-analysis/
+├── 📁 data/                          # Dataset directory (create locally)
+│   └── Mental_Disorders_Raw_Data.csv # Place dataset here (1.8GB)
 ├── 📁 src/python/                    # Python analysis scripts
 │   └── mental_disorders_analysis.py # Main analysis engine
 ├── 📁 notebooks/                     # Jupyter notebooks
