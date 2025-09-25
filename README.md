@@ -81,6 +81,8 @@ jupyter notebook notebooks/
 
 ### Source
 Global mental health data covering:
+
+**Note**: The dataset (1.8GB) is not included in this repository due to size limitations. Download instructions are provided in the setup guide.
 - 204+ countries and territories
 - 10 major mental health disorders
 - Multiple health outcome measures

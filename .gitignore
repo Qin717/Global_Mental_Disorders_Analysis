@@ -116,3 +116,5 @@ config/local.yaml
 
 # Keep example configs
 !config/example_config.yaml
+# Large dataset file - keep local only
+data/Mental_Disorders_Raw_Data.csv
