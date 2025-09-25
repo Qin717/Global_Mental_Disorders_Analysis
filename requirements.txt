@@ -1,0 +1,63 @@
+# Data Analysis and Processing
+pandas>=2.3.0
+numpy>=2.3.0
+scipy>=1.11.0
+
+# Database and SQL
+psycopg2-binary>=2.9.5
+SQLAlchemy>=2.0.0
+sqlparse>=0.4.3
+
+# Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.15.0
+bokeh>=3.2.0
+
+# Jupyter and Notebooks
+jupyter>=1.0.0
+notebook>=7.0.0
+ipywidgets>=8.1.0
+nbconvert>=7.16.0
+
+# Machine Learning and Statistics
+scikit-learn>=1.3.0
+statsmodels>=0.14.0
+xgboost>=2.0.0
+
+# Data Quality and Validation
+great-expectations>=0.17.0
+cerberus>=1.3.4
+
+# Configuration and Utilities
+pyyaml>=6.0
+python-dotenv>=1.0.0
+click>=8.1.0
+tqdm>=4.66.0
+
+# Development and Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.7.0
+flake8>=6.0.0
+isort>=5.12.0
+
+# Documentation
+sphinx>=7.1.0
+sphinx-rtd-theme>=1.3.0
+
+# Performance and Memory
+memory-profiler>=0.61.0
+line-profiler>=4.1.0
+
+# Time Series Analysis
+prophet>=1.1.4
+seasonal-decompose>=0.1.0
+
+# Geospatial Analysis (if needed)
+geopandas>=0.14.0
+folium>=0.14.0
+
+# Web Framework (for dashboards)
+streamlit>=1.28.0
+dash>=2.14.0
