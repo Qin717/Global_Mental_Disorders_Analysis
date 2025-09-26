@@ -77,7 +77,7 @@ class AnalysisResultsExporter:
         df['data_source'] = 'Global Burden of Disease Study'
         
         # Save to CSV
-        output_path = self.output_dir / 'mental_disorder_growth_analysis.csv'
+        output_path = self.output_dir / 'Q2_mental_disorder_growth_analysis.csv'
         df.to_csv(output_path, index=False)
         
         print(f"✅ Mental Disorder Growth Analysis exported to: {output_path}")
@@ -130,7 +130,7 @@ class AnalysisResultsExporter:
         )
         
         # Save to CSV
-        output_path = self.output_dir / 'age_group_trends_analysis.csv'
+        output_path = self.output_dir / 'Q3_age_group_trends_analysis.csv'
         df.to_csv(output_path, index=False)
         
         print(f"✅ Age Group Trends Analysis exported to: {output_path}")
@@ -164,7 +164,7 @@ class AnalysisResultsExporter:
         summary_df = pd.DataFrame(summary_data)
         
         # Save summary
-        output_path = self.output_dir / 'analysis_summary_report.csv'
+        output_path = self.output_dir / 'Q1_analysis_summary_report.csv'
         summary_df.to_csv(output_path, index=False)
         
         print(f"✅ Summary Report exported to: {output_path}")
