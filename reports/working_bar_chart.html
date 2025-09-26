@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working Bar Chart - Mental Disorders</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #4f81bd 0%, #70ad47 100%);
+            color: white;
+            border-radius: 8px;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .controls label {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .controls select, .controls input {
+            margin-right: 20px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .bar {
+            fill: #3498db;
+            transition: all 0.3s ease;
+        }
+        .bar:hover {
+            fill: #2980b9;
+            stroke: #333;
+            stroke-width: 2;
+        }
+        .axis {
+            font-size: 12px;
+        }
+        .axis-label {
+            font-size: 14px;
+            font-weight: bold;
+            fill: #333;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 1000;
+        }
+        .value-label {
+            font-size: 11px;
+            text-anchor: middle;
+            fill: #333;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Mental Disorders Analysis</h1>
+            <p>Top Countries by Prevalence (1990-2021)</p>
+        </div>
+        
+        <div id="status" class="status loading">Loading data...</div>
+        
+        <div class="controls" id="controls" style="display: none;">
+            <label for="disorderSelect">Disorder:</label>
+            <select id="disorderSelect">
+                <option value="all">All Disorders</option>
+            </select>
+            
+            <label for="countryCount">Countries:</label>
+            <input type="number" id="countryCount" value="15" min="5" max="25">
+            
+            <label for="chartType">Chart Type:</label>
+            <select id="chartType">
+                <option value="horizontal">Horizontal</option>
+                <option value="vertical">Vertical</option>
+            </select>
+        </div>
+        
+        <div id="chart"></div>
+        <div id="dataInfo"></div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Global variables
+        let allData = [];
+        let filteredData = [];
+        
+        // Tooltip
+        const tooltip = d3.select("#tooltip");
+        
+        // Load data function
+        async function loadData() {
+            try {
+                console.log('Starting data load...');
+                updateStatus('Loading data...', 'loading');
+                
+                // Fetch data
+                const response = await fetch('Q4_country_data.csv');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                console.log('Data loaded, length:', text.length);
+                
+                // Parse CSV
+                allData = d3.csvParse(text, d3.autoType);
+                console.log('Data parsed, records:', allData.length);
+                
+                if (allData.length === 0) {
+                    throw new Error('No data found in CSV file');
+                }
+                
+                // Show success
+                updateStatus(`✅ Successfully loaded ${allData.length} records`, 'success');
+                
+                // Show controls
+                document.getElementById('controls').style.display = 'block';
+                
+                // Populate controls
+                populateControls();
+                
+                // Create initial chart
+                createChart();
+                
+                // Show data info
+                showDataInfo();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+                showErrorDetails(error);
+            }
+        }
+        
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function showErrorDetails(error) {
+            const dataInfo = document.getElementById('dataInfo');
+            dataInfo.innerHTML = `
+                <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h4>Error Details:</h4>
+                    <p><strong>Message:</strong> ${error.message}</p>
+                    <p><strong>Type:</strong> ${error.name}</p>
+                    <h5>Possible Solutions:</h5>
+                    <ul>
+                        <li>Make sure you're using the server URL: <code>http://localhost:8001/working_bar_chart.html</code></li>
+                        <li>Don't open the HTML file directly in the browser</li>
+                        <li>Check that the server is running: <code>python3 -m http.server 8001</code></li>
+                        <li>Open browser console (F12) for more details</li>
+                    </ul>
+                </div>
+            `;
+        }
+        
+        function populateControls() {
+            const disorders = [...new Set(allData.map(d => d.disorder))].sort();
+            const select = document.getElementById('disorderSelect');
+            
+            // Clear existing options
+            select.innerHTML = '<option value="all">All Disorders</option>';
+            
+            // Add disorder options
+            disorders.forEach(disorder => {
+                const option = document.createElement('option');
+                option.value = disorder;
+                option.textContent = disorder;
+                select.appendChild(option);
+            });
+        }
+        
+        function showDataInfo() {
+            const dataInfo = document.getElementById('dataInfo');
+            const uniqueCountries = new Set(allData.map(d => d.country)).size;
+            const uniqueDisorders = new Set(allData.map(d => d.disorder)).size;
+            const avgPrevalence = d3.mean(allData, d => d.avg_prevalence_percent);
+            const maxPrevalence = d3.max(allData, d => d.avg_prevalence_percent);
+            
+            dataInfo.innerHTML = `
+                <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h4>Data Summary:</h4>
+                    <ul>
+                        <li><strong>Total Records:</strong> ${allData.length}</li>
+                        <li><strong>Countries:</strong> ${uniqueCountries}</li>
+                        <li><strong>Mental Disorders:</strong> ${uniqueDisorders}</li>
+                        <li><strong>Average Prevalence:</strong> ${avgPrevalence.toFixed(2)}%</li>
+                        <li><strong>Highest Prevalence:</strong> ${maxPrevalence.toFixed(2)}%</li>
+                    </ul>
+                </div>
+            `;
+        }
+        
+        function createChart() {
+            console.log('Creating chart...');
+            
+            // Get filter values
+            const selectedDisorder = document.getElementById('disorderSelect').value;
+            const countryCount = parseInt(document.getElementById('countryCount').value);
+            const chartType = document.getElementById('chartType').value;
+            
+            // Filter data
+            filteredData = allData;
+            if (selectedDisorder !== 'all') {
+                filteredData = allData.filter(d => d.disorder === selectedDisorder);
+            }
+            
+            // Calculate country averages
+            const countryAverages = [...new Set(filteredData.map(d => d.country))]
+                .map(country => {
+                    const countryData = filteredData.filter(d => d.country === country);
+                    return {
+                        country,
+                        avgPrevalence: d3.mean(countryData, d => d.avg_prevalence_percent),
+                        maxPrevalence: d3.max(countryData, d => d.avg_prevalence_percent),
+                        minPrevalence: d3.min(countryData, d => d.avg_prevalence_percent),
+                        disorderCount: countryData.length
+                    };
+                })
+                .sort((a, b) => b.avgPrevalence - a.avgPrevalence)
+                .slice(0, countryCount);
+            
+            console.log('Top countries:', countryAverages.length);
+            
+            // Clear previous chart
+            d3.select('#chart').selectAll('*').remove();
+            
+            // Chart dimensions
+            const margin = { top: 20, right: 30, bottom: 80, left: 120 };
+            const width = 800 - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+            
+            // Create SVG
+            const svg = d3.select('#chart')
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom);
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            // Color scale
+            const colorScale = d3.scaleOrdinal()
+                .domain(countryAverages.map(d => d.country))
+                .range(d3.schemeCategory10);
+            
+            if (chartType === 'horizontal') {
+                createHorizontalChart(g, countryAverages, width, height, colorScale);
+            } else {
+                createVerticalChart(g, countryAverages, width, height, colorScale);
+            }
+        }
+        
+        function createHorizontalChart(g, data, width, height, colorScale) {
+            // Define margin for this function
+            const margin = { top: 20, right: 30, bottom: 80, left: 120 };
+            
+            // Scales
+            const xScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.avgPrevalence)])
+                .range([0, width]);
+            
+            const yScale = d3.scaleBand()
+                .domain(data.map(d => d.country))
+                .range([0, height])
+                .padding(0.1);
+            
+            // Bars
+            g.selectAll('.bar')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', 0)
+                .attr('y', d => yScale(d.country))
+                .attr('width', d => xScale(d.avgPrevalence))
+                .attr('height', yScale.bandwidth())
+                .attr('fill', d => colorScale(d.country))
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`
+                            <strong>${d.country}</strong><br/>
+                            Average: ${d.avgPrevalence.toFixed(2)}%<br/>
+                            Range: ${d.minPrevalence.toFixed(2)}% - ${d.maxPrevalence.toFixed(2)}%<br/>
+                            Disorders: ${d.disorderCount}
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
+            
+            // Value labels
+            g.selectAll('.value-label')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('class', 'value-label')
+                .attr('x', d => xScale(d.avgPrevalence) + 5)
+                .attr('y', d => yScale(d.country) + yScale.bandwidth() / 2)
+                .attr('dy', '0.35em')
+                .text(d => d.avgPrevalence.toFixed(2) + '%');
+            
+            // Axes
+            g.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).tickFormat(d => d + '%'));
+            
+            g.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(yScale));
+            
+            // Labels
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text('Countries');
+            
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', `translate(${width/2}, ${height + margin.bottom - 10})`)
+                .style('text-anchor', 'middle')
+                .text('Average Prevalence (%)');
+        }
+        
+        function createVerticalChart(g, data, width, height, colorScale) {
+            // Define margin for this function
+            const margin = { top: 20, right: 30, bottom: 80, left: 120 };
+            
+            // Scales
+            const xScale = d3.scaleBand()
+                .domain(data.map(d => d.country))
+                .range([0, width])
+                .padding(0.1);
+            
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.avgPrevalence)])
+                .range([height, 0]);
+            
+            // Bars
+            g.selectAll('.bar')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => xScale(d.country))
+                .attr('y', d => yScale(d.avgPrevalence))
+                .attr('width', xScale.bandwidth())
+                .attr('height', d => height - yScale(d.avgPrevalence))
+                .attr('fill', d => colorScale(d.country))
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`
+                            <strong>${d.country}</strong><br/>
+                            Average: ${d.avgPrevalence.toFixed(2)}%<br/>
+                            Range: ${d.minPrevalence.toFixed(2)}% - ${d.maxPrevalence.toFixed(2)}%<br/>
+                            Disorders: ${d.disorderCount}
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
+            
+            // Value labels
+            g.selectAll('.value-label')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('class', 'value-label')
+                .attr('x', d => xScale(d.country) + xScale.bandwidth() / 2)
+                .attr('y', d => yScale(d.avgPrevalence) - 5)
+                .attr('text-anchor', 'middle')
+                .text(d => d.avgPrevalence.toFixed(2) + '%');
+            
+            // Axes
+            g.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll('text')
+                .style('text-anchor', 'end')
+                .attr('dx', '-.8em')
+                .attr('dy', '.15em')
+                .attr('transform', 'rotate(-45)');
+            
+            g.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(yScale).tickFormat(d => d + '%'));
+            
+            // Labels
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text('Average Prevalence (%)');
+            
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', `translate(${width/2}, ${height + margin.bottom - 10})`)
+                .style('text-anchor', 'middle')
+                .text('Countries');
+        }
+        
+        // Event listeners
+        document.getElementById('disorderSelect').addEventListener('change', createChart);
+        document.getElementById('countryCount').addEventListener('change', createChart);
+        document.getElementById('chartType').addEventListener('change', createChart);
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

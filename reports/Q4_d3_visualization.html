@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Disorders Prevalence Analysis - Interactive D3.js Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f81bd 0%, #70ad47 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            padding: 30px;
+        }
+        
+        .chart-container {
+            margin-bottom: 40px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .chart-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+        
+        select, input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .tooltip h4 {
+            margin: 0 0 5px 0;
+            color: #3498db;
+        }
+        
+        .tooltip p {
+            margin: 2px 0;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .axis {
+            font-size: 12px;
+        }
+        
+        .axis-label {
+            font-size: 14px;
+            font-weight: 600;
+            fill: #555;
+        }
+        
+        .grid-line {
+            stroke: #e0e0e0;
+            stroke-width: 1;
+            opacity: 0.5;
+        }
+        
+        .bar {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .bar:hover {
+            opacity: 0.8;
+            stroke: #333;
+            stroke-width: 2;
+        }
+        
+        .line {
+            fill: none;
+            stroke-width: 3;
+            transition: stroke-width 0.3s;
+        }
+        
+        .line:hover {
+            stroke-width: 5;
+        }
+        
+        .dot {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .dot:hover {
+            r: 8;
+            stroke: #333;
+            stroke-width: 2;
+        }
+        
+        .heatmap-cell {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .heatmap-cell:hover {
+            stroke: #333;
+            stroke-width: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Mental Disorders Prevalence Analysis</h1>
+            <p>Interactive Dashboard: Countries and Age Groups (1990-2021)</p>
+        </div>
+        
+        <div class="dashboard">
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCountries">-</div>
+                    <div class="stat-label">Countries Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalDisorders">-</div>
+                    <div class="stat-label">Mental Disorders</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgPrevalence">-</div>
+                    <div class="stat-label">Average Prevalence (%)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="highestPrevalence">-</div>
+                    <div class="stat-label">Highest Prevalence (%)</div>
+                </div>
+            </div>
+            
+            <!-- Chart 1: Top Countries by Disorder -->
+            <div class="chart-container">
+                <h2 class="chart-title">Top Countries by Mental Disorder Prevalence</h2>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="disorderSelect">Select Disorder:</label>
+                        <select id="disorderSelect">
+                            <option value="all">All Disorders</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="countryLimit">Number of Countries:</label>
+                        <input type="number" id="countryLimit" value="15" min="5" max="50">
+                    </div>
+                </div>
+                <div id="countryChart"></div>
+            </div>
+            
+            <!-- Chart 2: Age Group Analysis -->
+            <div class="chart-container">
+                <h2 class="chart-title">Mental Disorder Prevalence by Age Group</h2>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="ageDisorderSelect">Select Disorder:</label>
+                        <select id="ageDisorderSelect">
+                            <option value="all">All Disorders</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="ageChart"></div>
+            </div>
+            
+            <!-- Chart 3: Interactive Heatmap -->
+            <div class="chart-container">
+                <h2 class="chart-title">Country vs Disorder Prevalence Heatmap</h2>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="heatmapType">Heatmap Type:</label>
+                        <select id="heatmapType">
+                            <option value="countries">Top Countries</option>
+                            <option value="ageGroups">Age Groups</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="heatmapChart"></div>
+            </div>
+            
+            <!-- Chart 4: Trend Analysis -->
+            <div class="chart-container">
+                <h2 class="chart-title">Prevalence Distribution Analysis</h2>
+                <div id="distributionChart"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // Global variables
+        let countryData = [];
+        let ageData = [];
+        let allData = [];
+        
+        // Color schemes
+        const colorSchemes = {
+            disorders: d3.scaleOrdinal(d3.schemeCategory10),
+            countries: d3.scaleOrdinal(d3.schemeSet3),
+            heatmap: d3.scaleSequential(d3.interpolateBlues)
+        };
+        
+        // Dimensions
+        const dimensions = {
+            countryChart: { width: 900, height: 500, margin: { top: 20, right: 150, bottom: 60, left: 80 } },
+            ageChart: { width: 900, height: 400, margin: { top: 20, right: 50, bottom: 60, left: 80 } },
+            heatmapChart: { width: 900, height: 500, margin: { top: 20, right: 50, bottom: 100, left: 100 } },
+            distributionChart: { width: 900, height: 400, margin: { top: 20, right: 50, bottom: 60, left: 80 } }
+        };
+        
+        // Tooltip
+        const tooltip = d3.select("#tooltip");
+        
+        // Load data
+        async function loadData() {
+            try {
+                console.log('Starting data load...');
+                
+                // Load country data
+                console.log('Loading country data...');
+                const countryResponse = await fetch('Q4_country_data.csv');
+                if (!countryResponse.ok) {
+                    throw new Error(`Failed to load country data: ${countryResponse.status} ${countryResponse.statusText}`);
+                }
+                const countryText = await countryResponse.text();
+                console.log('Country data loaded, length:', countryText.length);
+                countryData = d3.csvParse(countryText, d3.autoType);
+                console.log('Country data parsed, records:', countryData.length);
+                
+                // Load age data
+                console.log('Loading age data...');
+                const ageResponse = await fetch('Q4_age_data.csv');
+                if (!ageResponse.ok) {
+                    throw new Error(`Failed to load age data: ${ageResponse.status} ${ageResponse.statusText}`);
+                }
+                const ageText = await ageResponse.text();
+                console.log('Age data loaded, length:', ageText.length);
+                ageData = d3.csvParse(ageText, d3.autoType);
+                console.log('Age data parsed, records:', ageData.length);
+                
+                // Combine all data
+                allData = [...countryData, ...ageData];
+                console.log('Total combined records:', allData.length);
+                
+                // Update statistics
+                updateStatistics();
+                
+                // Populate select options
+                populateSelects();
+                
+                // Create visualizations
+                console.log('Creating visualizations...');
+                createCountryChart();
+                createAgeChart();
+                createHeatmapChart();
+                createDistributionChart();
+                
+                console.log('All visualizations created successfully!');
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.querySelector('.dashboard').innerHTML = 
+                    `<div class="loading" style="color: red; background: #ffe6e6; padding: 20px; border-radius: 5px;">
+                        <h3>Error Loading Data</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Possible solutions:</strong></p>
+                        <ul>
+                            <li>Make sure you're running a local web server (not opening the file directly)</li>
+                            <li>Check that Q4_country_data.csv and Q4_age_data.csv are in the same directory</li>
+                            <li>Open browser developer tools (F12) and check the Console tab for more details</li>
+                        </ul>
+                        <p><strong>To start a local server:</strong></p>
+                        <code>cd /Users/qinqin/Desktop/Mental_Disorders/reports && python3 -m http.server 8000</code><br/>
+                        <code>Then open: http://localhost:8000/Q4_d3_visualization.html</code>
+                    </div>`;
+            }
+        }
+        
+        function updateStatistics() {
+            const uniqueCountries = new Set(countryData.map(d => d.country)).size;
+            const uniqueDisorders = new Set(allData.map(d => d.disorder)).size;
+            const avgPrevalence = d3.mean(allData, d => d.avg_prevalence_percent);
+            const maxPrevalence = d3.max(allData, d => d.avg_prevalence_percent);
+            
+            document.getElementById('totalCountries').textContent = uniqueCountries;
+            document.getElementById('totalDisorders').textContent = uniqueDisorders;
+            document.getElementById('avgPrevalence').textContent = avgPrevalence.toFixed(2);
+            document.getElementById('highestPrevalence').textContent = maxPrevalence.toFixed(2);
+        }
+        
+        function populateSelects() {
+            const disorders = [...new Set(allData.map(d => d.disorder))].sort();
+            
+            const disorderSelect = d3.select('#disorderSelect');
+            const ageDisorderSelect = d3.select('#ageDisorderSelect');
+            
+            disorderSelect.selectAll('option')
+                .data(['all', ...disorders])
+                .enter()
+                .append('option')
+                .attr('value', d => d)
+                .text(d => d === 'all' ? 'All Disorders' : d);
+            
+            ageDisorderSelect.selectAll('option')
+                .data(['all', ...disorders])
+                .enter()
+                .append('option')
+                .attr('value', d => d)
+                .text(d => d === 'all' ? 'All Disorders' : d);
+        }
+        
+        function createCountryChart() {
+            console.log('Creating country chart...');
+            const container = d3.select('#countryChart');
+            container.selectAll('*').remove();
+            
+            const svg = container.append('svg')
+                .attr('width', dimensions.countryChart.width)
+                .attr('height', dimensions.countryChart.height);
+            
+            const width = dimensions.countryChart.width - dimensions.countryChart.margin.left - dimensions.countryChart.margin.right;
+            const height = dimensions.countryChart.height - dimensions.countryChart.margin.top - dimensions.countryChart.margin.bottom;
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${dimensions.countryChart.margin.left},${dimensions.countryChart.margin.top})`);
+            
+            // Get filtered data
+            const selectedDisorder = document.getElementById('disorderSelect').value;
+            const countryLimit = parseInt(document.getElementById('countryLimit').value);
+            
+            console.log('Selected disorder:', selectedDisorder, 'Country limit:', countryLimit);
+            console.log('Country data length:', countryData.length);
+            
+            let filteredData = countryData;
+            if (selectedDisorder !== 'all') {
+                filteredData = countryData.filter(d => d.disorder === selectedDisorder);
+                console.log('Filtered data length:', filteredData.length);
+            }
+            
+            // Get top countries
+            const topCountries = filteredData
+                .sort((a, b) => b.avg_prevalence_percent - a.avg_prevalence_percent)
+                .slice(0, countryLimit);
+            
+            console.log('Top countries for chart:', topCountries.length, topCountries.slice(0, 3));
+            
+            // Scales
+            const xScale = d3.scaleLinear()
+                .domain([0, d3.max(topCountries, d => d.avg_prevalence_percent)])
+                .range([0, width]);
+            
+            const yScale = d3.scaleBand()
+                .domain(topCountries.map(d => d.country))
+                .range([0, height])
+                .padding(0.1);
+            
+            // Color scale
+            const colorScale = d3.scaleOrdinal()
+                .domain([...new Set(topCountries.map(d => d.disorder))])
+                .range(d3.schemeCategory10);
+            
+            // Bars
+            g.selectAll('.bar')
+                .data(topCountries)
+                .enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .attr('x', 0)
+                .attr('y', d => yScale(d.country))
+                .attr('width', d => xScale(d.avg_prevalence_percent))
+                .attr('height', yScale.bandwidth())
+                .attr('fill', d => colorScale(d.disorder))
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`
+                            <h4>${d.country}</h4>
+                            <p><strong>Disorder:</strong> ${d.disorder}</p>
+                            <p><strong>Prevalence:</strong> ${d.avg_prevalence_percent}%</p>
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
+            
+            // Axes
+            g.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).tickFormat(d => d + '%'));
+            
+            g.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(yScale));
+            
+            // Labels
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - dimensions.countryChart.margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text('Countries');
+            
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', `translate(${width/2}, ${height + dimensions.countryChart.margin.bottom - 10})`)
+                .style('text-anchor', 'middle')
+                .text('Average Prevalence (%)');
+            
+            // Legend
+            const legend = g.append('g')
+                .attr('class', 'legend')
+                .attr('transform', `translate(${width + 20}, 20)`);
+            
+            const legendItems = legend.selectAll('.legend-item')
+                .data([...new Set(topCountries.map(d => d.disorder))])
+                .enter()
+                .append('g')
+                .attr('class', 'legend-item')
+                .attr('transform', (d, i) => `translate(0, ${i * 25})`);
+            
+            legendItems.append('rect')
+                .attr('width', 15)
+                .attr('height', 15)
+                .attr('fill', d => colorScale(d));
+            
+            legendItems.append('text')
+                .attr('x', 20)
+                .attr('y', 12)
+                .style('font-size', '12px')
+                .text(d => d);
+        }
+        
+        function createAgeChart() {
+            const container = d3.select('#ageChart');
+            container.selectAll('*').remove();
+            
+            const svg = container.append('svg')
+                .attr('width', dimensions.ageChart.width)
+                .attr('height', dimensions.ageChart.height);
+            
+            const width = dimensions.ageChart.width - dimensions.ageChart.margin.left - dimensions.ageChart.margin.right;
+            const height = dimensions.ageChart.height - dimensions.ageChart.margin.top - dimensions.ageChart.margin.bottom;
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${dimensions.ageChart.margin.left},${dimensions.ageChart.margin.top})`);
+            
+            // Get filtered data
+            const selectedDisorder = document.getElementById('ageDisorderSelect').value;
+            let filteredData = ageData;
+            if (selectedDisorder !== 'all') {
+                filteredData = ageData.filter(d => d.disorder === selectedDisorder);
+            }
+            
+            // Group by age group and calculate average
+            const ageGroups = d3.group(filteredData, d => d.age_group);
+            const ageDataProcessed = Array.from(ageGroups, ([ageGroup, values]) => ({
+                ageGroup,
+                avgPrevalence: d3.mean(values, d => d.avg_prevalence_percent),
+                disorders: values.map(d => d.disorder)
+            })).sort((a, b) => {
+                // Sort by age numerically
+                const ageA = parseInt(a.ageGroup.split('-')[0]);
+                const ageB = parseInt(b.ageGroup.split('-')[0]);
+                return ageA - ageB;
+            });
+            
+            // Scales
+            const xScale = d3.scaleBand()
+                .domain(ageDataProcessed.map(d => d.ageGroup))
+                .range([0, width])
+                .padding(0.1);
+            
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(ageDataProcessed, d => d.avgPrevalence)])
+                .range([height, 0]);
+            
+            // Line generator
+            const line = d3.line()
+                .x(d => xScale(d.ageGroup) + xScale.bandwidth() / 2)
+                .y(d => yScale(d.avgPrevalence))
+                .curve(d3.curveMonotoneX);
+            
+            // Add line
+            g.append('path')
+                .datum(ageDataProcessed)
+                .attr('class', 'line')
+                .attr('d', line)
+                .attr('stroke', '#3498db')
+                .attr('stroke-width', 3)
+                .attr('fill', 'none');
+            
+            // Add dots
+            g.selectAll('.dot')
+                .data(ageDataProcessed)
+                .enter()
+                .append('circle')
+                .attr('class', 'dot')
+                .attr('cx', d => xScale(d.ageGroup) + xScale.bandwidth() / 2)
+                .attr('cy', d => yScale(d.avgPrevalence))
+                .attr('r', 5)
+                .attr('fill', '#3498db')
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`
+                            <h4>Age Group: ${d.ageGroup}</h4>
+                            <p><strong>Average Prevalence:</strong> ${d.avgPrevalence.toFixed(2)}%</p>
+                            <p><strong>Disorders:</strong> ${d.disorders.join(', ')}</p>
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
+            
+            // Axes
+            g.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll('text')
+                .style('text-anchor', 'end')
+                .attr('dx', '-.8em')
+                .attr('dy', '.15em')
+                .attr('transform', 'rotate(-45)');
+            
+            g.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(yScale).tickFormat(d => d + '%'));
+            
+            // Labels
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - dimensions.ageChart.margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text('Average Prevalence (%)');
+            
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', `translate(${width/2}, ${height + dimensions.ageChart.margin.bottom - 10})`)
+                .style('text-anchor', 'middle')
+                .text('Age Groups');
+        }
+        
+        function createHeatmapChart() {
+            const container = d3.select('#heatmapChart');
+            container.selectAll('*').remove();
+            
+            const svg = container.append('svg')
+                .attr('width', dimensions.heatmapChart.width)
+                .attr('height', dimensions.heatmapChart.height);
+            
+            const width = dimensions.heatmapChart.width - dimensions.heatmapChart.margin.left - dimensions.heatmapChart.margin.right;
+            const height = dimensions.heatmapChart.height - dimensions.heatmapChart.margin.top - dimensions.heatmapChart.margin.bottom;
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${dimensions.heatmapChart.margin.left},${dimensions.heatmapChart.margin.top})`);
+            
+            const heatmapType = document.getElementById('heatmapType').value;
+            let data, xDomain, yDomain;
+            
+            if (heatmapType === 'countries') {
+                // Top 15 countries heatmap
+                const topCountries = [...new Set(countryData.map(d => d.country))]
+                    .map(country => ({
+                        country,
+                        avgPrevalence: d3.mean(countryData.filter(d => d.country === country), d => d.avg_prevalence_percent)
+                    }))
+                    .sort((a, b) => b.avgPrevalence - a.avgPrevalence)
+                    .slice(0, 15)
+                    .map(d => d.country);
+                
+                data = countryData.filter(d => topCountries.includes(d.country));
+                xDomain = [...new Set(data.map(d => d.disorder))];
+                yDomain = topCountries;
+            } else {
+                // Age groups heatmap
+                data = ageData;
+                xDomain = [...new Set(data.map(d => d.disorder))];
+                yDomain = [...new Set(data.map(d => d.age_group))].sort((a, b) => {
+                    const ageA = parseInt(a.split('-')[0]);
+                    const ageB = parseInt(b.split('-')[0]);
+                    return ageA - ageB;
+                });
+            }
+            
+            // Create matrix
+            const matrix = [];
+            xDomain.forEach(disorder => {
+                yDomain.forEach(category => {
+                    const item = data.find(d => d.disorder === disorder && 
+                        (heatmapType === 'countries' ? d.country === category : d.age_group === category));
+                    matrix.push({
+                        disorder,
+                        category,
+                        value: item ? item.avg_prevalence_percent : 0
+                    });
+                });
+            });
+            
+            // Scales
+            const xScale = d3.scaleBand()
+                .domain(xDomain)
+                .range([0, width])
+                .padding(0.05);
+            
+            const yScale = d3.scaleBand()
+                .domain(yDomain)
+                .range([0, height])
+                .padding(0.05);
+            
+            const colorScale = d3.scaleSequential(d3.interpolateBlues)
+                .domain([0, d3.max(matrix, d => d.value)]);
+            
+            // Cells
+            g.selectAll('.heatmap-cell')
+                .data(matrix)
+                .enter()
+                .append('rect')
+                .attr('class', 'heatmap-cell')
+                .attr('x', d => xScale(d.disorder))
+                .attr('y', d => yScale(d.category))
+                .attr('width', xScale.bandwidth())
+                .attr('height', yScale.bandwidth())
+                .attr('fill', d => colorScale(d.value))
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`
+                            <h4>${d.disorder}</h4>
+                            <p><strong>${heatmapType === 'countries' ? 'Country' : 'Age Group'}:</strong> ${d.category}</p>
+                            <p><strong>Prevalence:</strong> ${d.value.toFixed(2)}%</p>
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
+            
+            // Axes
+            g.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale))
+                .selectAll('text')
+                .style('text-anchor', 'end')
+                .attr('dx', '-.8em')
+                .attr('dy', '.15em')
+                .attr('transform', 'rotate(-45)');
+            
+            g.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(yScale));
+            
+            // Color legend
+            const legendWidth = 200;
+            const legendHeight = 20;
+            
+            const legend = g.append('g')
+                .attr('transform', `translate(${width - legendWidth}, ${height + 30})`);
+            
+            const defs = svg.append('defs');
+            const gradient = defs.append('linearGradient')
+                .attr('id', 'heatmap-gradient');
+            
+            gradient.selectAll('stop')
+                .data(d3.range(0, 1.1, 0.1))
+                .enter()
+                .append('stop')
+                .attr('offset', d => d)
+                .attr('stop-color', d => colorScale(d * d3.max(matrix, d => d.value)));
+            
+            legend.append('rect')
+                .attr('width', legendWidth)
+                .attr('height', legendHeight)
+                .style('fill', 'url(#heatmap-gradient)');
+            
+            legend.append('text')
+                .attr('x', 0)
+                .attr('y', legendHeight + 15)
+                .style('font-size', '12px')
+                .text('0%');
+            
+            legend.append('text')
+                .attr('x', legendWidth)
+                .attr('y', legendHeight + 15)
+                .style('font-size', '12px')
+                .style('text-anchor', 'end')
+                .text(d3.max(matrix, d => d.value).toFixed(1) + '%');
+        }
+        
+        function createDistributionChart() {
+            const container = d3.select('#distributionChart');
+            container.selectAll('*').remove();
+            
+            const svg = container.append('svg')
+                .attr('width', dimensions.distributionChart.width)
+                .attr('height', dimensions.distributionChart.height);
+            
+            const width = dimensions.distributionChart.width - dimensions.distributionChart.margin.left - dimensions.distributionChart.margin.right;
+            const height = dimensions.distributionChart.height - dimensions.distributionChart.margin.top - dimensions.distributionChart.margin.bottom;
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${dimensions.distributionChart.margin.left},${dimensions.distributionChart.margin.top})`);
+            
+            // Create histogram data
+            const histogram = d3.histogram()
+                .domain(d3.extent(allData, d => d.avg_prevalence_percent))
+                .thresholds(20)
+                (allData.map(d => d.avg_prevalence_percent));
+            
+            // Scales
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(allData, d => d.avg_prevalence_percent))
+                .range([0, width]);
+            
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(histogram, d => d.length)])
+                .range([height, 0]);
+            
+            // Bars
+            g.selectAll('.histogram-bar')
+                .data(histogram)
+                .enter()
+                .append('rect')
+                .attr('class', 'histogram-bar')
+                .attr('x', d => xScale(d.x0))
+                .attr('y', d => yScale(d.length))
+                .attr('width', d => xScale(d.x1) - xScale(d.x0))
+                .attr('height', d => height - yScale(d.length))
+                .attr('fill', '#3498db')
+                .attr('opacity', 0.7)
+                .on('mouseover', function(event, d) {
+                    tooltip.style('opacity', 1)
+                        .html(`
+                            <h4>Prevalence Range</h4>
+                            <p><strong>Range:</strong> ${d.x0.toFixed(2)}% - ${d.x1.toFixed(2)}%</p>
+                            <p><strong>Count:</strong> ${d.length} records</p>
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
+            
+            // Axes
+            g.append('g')
+                .attr('class', 'axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).tickFormat(d => d + '%'));
+            
+            g.append('g')
+                .attr('class', 'axis')
+                .call(d3.axisLeft(yScale));
+            
+            // Labels
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - dimensions.distributionChart.margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text('Frequency');
+            
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', `translate(${width/2}, ${height + dimensions.distributionChart.margin.bottom - 10})`)
+                .style('text-anchor', 'middle')
+                .text('Prevalence (%)');
+        }
+        
+        // Event listeners
+        document.getElementById('disorderSelect').addEventListener('change', createCountryChart);
+        document.getElementById('countryLimit').addEventListener('change', createCountryChart);
+        document.getElementById('ageDisorderSelect').addEventListener('change', createAgeChart);
+        document.getElementById('heatmapType').addEventListener('change', createHeatmapChart);
+        
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
