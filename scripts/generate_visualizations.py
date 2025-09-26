@@ -158,7 +158,7 @@ class MentalDisordersVisualizer:
         plt.tight_layout()
         
         # Save the plot
-        output_path = self.output_dir / 'mental_disorder_growth_analysis.png'
+        output_path = self.output_dir / 'Q2_mental_disorder_growth_analysis.png'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         print(f"✅ Saved disorder growth analysis: {output_path}")
         
@@ -271,7 +271,7 @@ class MentalDisordersVisualizer:
         plt.tight_layout()
         
         # Save the plot
-        output_path = self.output_dir / 'age_group_trends_analysis.png'
+        output_path = self.output_dir / 'Q3_age_group_trends_analysis.png'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         print(f"✅ Saved age group trends analysis: {output_path}")
         
